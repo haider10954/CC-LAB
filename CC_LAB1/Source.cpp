@@ -1,4 +1,4 @@
-// HAIDER ZAMAN 01-134182-077 (DO WHILE AND PUTBACK)
+// HAIDER 01-134182-077 (DO WHILE AND PUTBACK)
 #include<iostream>
 #include<string>
 #include<fstream>
@@ -595,29 +595,31 @@ bool state()
 				if (y.Value == H_RB_C)
 				{
 					y = get_next();
-					if (y.Value = H_LB_R)
+					if(y.Value==H_WHILE)
 					{
-						if (OREXP())
+						y = get_next();
+						if (y.Value == H_LB_R)
 						{
-							y = get_next();
-							if (y.Value == H_SEMI_COLON)
+							if (OREXP())
 							{
-								return true;
+								y = get_next();
+								if(y.Value==H_RB_R)
+								{
+									y = get_next();
+									if (y.Value == H_SEMI_COLON)
+									{
+										return true;
+									}
+								}
 							}
 						}
 					}
 				}
-
 			}
 		}
 	}
+	return false;
 }
-
-
-
-
-
-
 
 bool OREXP()
 {
