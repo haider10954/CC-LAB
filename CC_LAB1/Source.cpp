@@ -701,6 +701,7 @@ bool term()
 
 bool fact()
 {
+
 	y = get_next();
 	if (y.Value == H_NUM)
 		return true;
