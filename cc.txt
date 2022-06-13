@@ -1,0 +1,10 @@
+BEGIN
+	if(a>z)
+	{
+		a=a+b;
+	}
+	else
+	{
+		a=a-b;
+	}
+END
