@@ -1,40 +1,51 @@
-// HAIDER 01-134182-077 (DO WHILE AND PUTBACK)
 #include<iostream>
 #include<string>
 #include<fstream>
-#include <iomanip>
 using namespace std;
-
 fstream file("C:\\Users\\Haider Zaman\\source\\repos\\CC_LAB1\\cc.txt", ios::in);
 char ch;
-
 enum Tokens {
 	H_ADD, H_LB_C, H_RB_C, H_LB_R, H_RB_R, H_SUBT, H_SEMI_COLON, H_MULT, H_COMMA, H_F_SLASH, H_RB_S,
 	H_LB_S, H_LESS_TH, H_GR_TH, H_INC, H_DEC, H_NOT, H_ASSIGN, H_EQUALEQUAL, H_PLUS_EQUAL, H_MINUS_EQUAL,
 	H_DIVID_QUAL, H_MUL_EQUAL, H_NOT_EQUAL, H_GREATER_EQUAL, H_LESS_EQUAL, H_DEFAULT, H_IF, H_ELSE, H_WHILE,
 	H_FOR, H_DO, H_BEGIN, H_END, H_SWITCH, H_BREAK, H_ELSEIF, H_VAR, H_NUM, H_COMMENT, H_AND, H_OR, H_COMPAND, H_COMPOR, H_LEFTSHIFT, H_RIGHTSHIFT
 };
-
+enum expkind { opk, constk, idk };
+enum stmtkind { ifk, assignk, dok, whilek };
+enum nodekind1 { stmtk, expk };
+struct treenode
+{
+	nodekind1 nodek;
+	stmtkind stmtk;
+	expkind expk;
+	Tokens token1;
+	int value;
+	string name;
+	treenode* leftchild;
+	treenode* rightchild;
+	treenode* middlechild;
+	treenode* sibling;
+};
 struct TokenRecord {
 	Tokens Value;
 	string Token_str;
 };
-
 TokenRecord arr[100];
 TokenRecord x;
 TokenRecord y;
 bool flag;
-bool state();
 bool program();
-bool state_list();
-bool expression();
-bool term();
-bool fact();
-bool OREXP();
-bool ANDEXP();
-bool EQUALEXP();
-bool COMPEXP();
-bool SHFTEXP();
+treenode* expression();
+treenode* term();
+treenode* fact();
+treenode* OREXP();
+treenode* ANDEXP();
+treenode* EQUALEXP();
+treenode* COMPEXP();
+treenode* SHFTEXP();
+void traverse(treenode*);
+treenode* state();
+treenode* state_list();
 int size_arr = 0;
 void H_ADD_entry(string H_ADD)
 {
@@ -55,19 +66,15 @@ int search(string check)
 	size_arr++;
 	return 1;
 }
-
 void create_table()
 {
 	cout << '\t' << "-:SYMBOL TABLE:-" << '\t' << endl;
-	cout << "Entry No" << "  " << "Identifier" << "      " << "Value" << endl;
+	cout << "Entry No" << " " << "Identifier" << " " << "Value" << endl;
 	for (int i = 0; i < size_arr; i++)
 	{
-
-		cout << i + 1 << "         " << arr[i].Token_str << "            " << arr[i].Value << endl;
+		cout << i + 1 << " " << arr[i].Token_str << " " << arr[i].Value << endl;
 	}
-
 }
-
 TokenRecord GetTokenRecord()
 {
 	TokenRecord Token_Array;
@@ -147,7 +154,7 @@ TokenRecord GetTokenRecord()
 				else
 				{
 					//search(check);
-					Token_Array.Token_str = "variable";
+					Token_Array.Token_str = check;
 					Token_Array.Value = H_VAR;
 					return Token_Array;
 				}
@@ -164,7 +171,7 @@ TokenRecord GetTokenRecord()
 				}
 				else
 					file.putback(ch);
-				Token_Array.Token_str = "DIGIT";
+				Token_Array.Token_str = num;
 				Token_Array.Value = H_NUM;
 				return Token_Array;
 			}
@@ -459,57 +466,82 @@ void put_back()
 
 int main()
 {
+	treenode* cor;
 	if (file.is_open())
 	{
-		file.seekg(0);
-		bool cor;
-		cor = program();
-		if (cor)
+		if (program())
 		{
-			cout << "All Ok" << endl;
+			cout << "All Good" << endl;
 		}
 		else
 		{
-			cout << "The Code in File in Incorrect" << endl;
+			cout << "Code in file is incorrect" << endl;
 		}
-		//create_table();
-		file.close();
 	}
 	else
 	{
 		cout << "Can't open the file" << endl;
 		return 0;
 	}
+	file.close();
 	return 0;
 }
-
 bool program()
 {
+	treenode* fulltree = NULL;
 	y = get_next();
 	if (y.Value == H_BEGIN)
 	{
-		if (state_list())
+		fulltree = state_list();
+		if (fulltree != NULL)
 		{
+			cout << "In-order Tree Traversal" << endl;
+			traverse(fulltree);
 			y = get_next();
 			if (y.Value == H_END)
 			{
 				return true;
 			}
+			else
+			{
+				return false;
+			}
 		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		put_back();
+		return false;
 	}
 	return false;
 }
-bool state_list() // statement list 
+treenode* state_list() // statement list 
 {
-	if (state())
+	treenode* stree = NULL;
+	treenode* prevtree = NULL;
+	treenode* stmttree = NULL;
+	if (prevtree = state())
 	{
+		prevtree->sibling = NULL;
+		stmttree = prevtree;
+		stmttree->sibling = NULL;
 		do
 		{
 			y = get_next();
 			if (y.Value == H_IF || y.Value == H_DO || y.Value == H_VAR)
 			{
 				put_back();
-				return false;
+				if ((stree = state()) == NULL)
+				{
+					return NULL;
+				}
+				stree->sibling = NULL;
+				prevtree->sibling = stree;
+				prevtree = stree;
 			}
 			else
 			{
@@ -517,206 +549,286 @@ bool state_list() // statement list
 				break;
 			}
 		} while (1);
-		return true; // if , not, uid not equal then may be else
+		//return true; // if , not, uid not equal then may be else
+		return (stmttree);
 	}
-	return false; //otherwise false
+	return nullptr; //otherwise false
 }
-bool state()
+treenode* state()
 {
+	treenode* t1 = NULL, * tree = NULL, * t2 = NULL;
+	int r = 0;
 	y = get_next();
 	if (y.Value == H_VAR)
 	{
+		tree = new treenode; // node for statement
+		tree->nodek = stmtk;
+		tree->stmtk = assignk;
+		tree->token1 = y.Value;
+		tree->name = y.Token_str;
 		y = get_next();
-		if (y.Value == H_ASSIGN || y.Value == H_NOT_EQUAL || y.Value == H_PLUS_EQUAL ||
-			y.Value == H_MINUS_EQUAL)
+		if (y.Value == H_ASSIGN)
 		{
-			if (OREXP())
+			t2 = new treenode;
+			t2->expk = opk;
+			t2->token1 = y.Value;
+			t2->name = y.Token_str;
+			t2->leftchild = t1;
+			t2->rightchild = NULL;
+			tree->leftchild = t2;
+			tree->rightchild = NULL;
+			if (t1 = OREXP())
 			{
+				t2->leftchild = t1;
 				y = get_next();
 				if (y.Value == H_SEMI_COLON)
 				{
-					return true;
-				}
-			}
-		}
-		put_back();
-
-	}
-	else if (y.Value == H_IF)
-	{
-		y = get_next();
-		if (y.Value == H_LB_R)
-		{
-			if (OREXP())
-			{
-				y = get_next();
-				if (y.Value == H_RB_R)
-				{
-					y = get_next();
-					if (y.Value == H_LB_C)
-					{
-						if (state_list())
-						{
-							y = get_next();
-							if (y.Value == H_RB_C)
-							{
-								y = get_next();
-								if (y.Value == H_ELSE)
-								{
-									y = get_next();
-									if (y.Value == H_LB_C)
-									{
-										if (state_list())
-										{
-											y = get_next();
-											if (y.Value == H_RB_C)
-											{
-												return true;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		put_back();
-	}
-	else if (y.Value == H_DO)
-	{
-		y = get_next();
-		if (y.Value == H_LB_C)
-		{
-			if (state_list())
-			{
-				y = get_next();
-				if (y.Value == H_RB_C)
-				{
-					y = get_next();
-					if(y.Value==H_WHILE)
-					{
-						y = get_next();
-						if (y.Value == H_LB_R)
-						{
-							if (OREXP())
-							{
-								y = get_next();
-								if(y.Value==H_RB_R)
-								{
-									y = get_next();
-									if (y.Value == H_SEMI_COLON)
-									{
-										return true;
-									}
-								}
-							}
-						}
-					}
+					return tree;
 				}
 			}
 		}
 	}
-	return false;
 }
-
-bool OREXP()
+treenode* OREXP()
 {
+	treenode* t = nullptr, * p = nullptr;
+	int flage = 0;
 	do
 	{
-		if (!ANDEXP())
-			return false;
+		t = ANDEXP();
+		if (flage)
+		{
+			p->rightchild = t;
+			flag = 0;
+			t = p;
+		}
 		y = get_next();
+		if (y.Value == H_COMPOR)
+		{
+			p = new treenode;
+			p->expk = opk;
+			p->token1 = y.Value;
+			p->leftchild = t;
+			p->name = y.Token_str;
+			flage = 1;
+		}
 	} while (y.Value == H_COMPOR);
 	put_back();
-	return true;
+	return (t);
 }
-bool ANDEXP()
+treenode* ANDEXP()
 {
+	treenode* t = nullptr, * p = nullptr;
+	int flage = 0;
 	do
 	{
-		if (!EQUALEXP())
-			return false;
+		t = EQUALEXP();
+		if (flage)
+		{
+			p->rightchild = t;
+			flage = 0;
+			t = p;
+		}
 		y = get_next();
+		if (y.Value == H_COMPAND)
+		{
+			p = new treenode;
+			p->expk = opk;
+			p->token1 = y.Value;
+			p->leftchild = t;
+			p->name = y.Token_str;
+			flage = 1;
+		}
 	} while (y.Value == H_COMPAND);
 	put_back();
-	return true;
+	return (t);
 }
-bool EQUALEXP()
+treenode* EQUALEXP()
 {
+	treenode* t = nullptr, * p = nullptr;
+	int flage = 0;
 	do
 	{
-		if (!COMPEXP())
-			return false;
+		t = COMPEXP();
+		if (flage)
+		{
+			p->rightchild = t;
+			flage = 0;
+			t = p;
+		}
 		y = get_next();
+		if (y.Value == H_EQUALEQUAL || y.Value == H_NOT_EQUAL)
+		{
+			p = new treenode;
+			p->expk = opk;
+			p->token1 = y.Value;
+			p->leftchild = t;
+			p->name = y.Token_str;
+			flage = 1;
+		}
 	} while (y.Value == H_EQUALEQUAL || y.Value == H_NOT_EQUAL);
 	put_back();
-	return true;
+	return (t);
 }
-bool COMPEXP()
+treenode* COMPEXP()
 {
+	treenode* t = nullptr, * p = nullptr;
+	int flage = 0;
 	do
 	{
-		if (!SHFTEXP())
-			return false;
+		t = SHFTEXP();
+		if (flage)
+		{
+			p->rightchild = t;
+			flage = 0;
+			t = p;
+		}
 		y = get_next();
-	} while (y.Value == H_GREATER_EQUAL || y.Value == H_LESS_EQUAL || y.Value == H_LESS_TH
-		|| y.Value == H_GR_TH);
+		if (y.Value == H_GREATER_EQUAL || y.Value == H_LESS_EQUAL || y.Value == H_LESS_TH || y.Value ==H_GR_TH)
+		{
+			p = new treenode;
+			p->expk = opk;
+			p->token1 = y.Value;
+			p->leftchild = t;
+			p->name = y.Token_str;
+			flage = 1;
+		}
+	} while (y.Value == H_GREATER_EQUAL || y.Value == H_LESS_EQUAL || y.Value == H_LESS_TH || y.Value == H_GR_TH);
 	put_back();
-	return true;
+	return (t);
 }
-bool SHFTEXP()
+treenode* SHFTEXP()
 {
+	treenode* t = nullptr, * p = nullptr;
+	int flage = 0;
 	do
 	{
-		if (!expression())
-			return false;
+		t = expression();
+		if (flage)
+		{
+			p->rightchild = t;
+			flage = 0;
+			t = p;
+		}
 		y = get_next();
+		if (y.Value == H_RIGHTSHIFT || y.Value == H_LEFTSHIFT)
+		{
+			p = new treenode;
+			p->expk = opk;
+			p->token1 = y.Value;
+			p->leftchild = t;
+			p->name = y.Token_str;
+			flage = 1;
+		}
 	} while (y.Value == H_RIGHTSHIFT || y.Value == H_LEFTSHIFT);
 	put_back();
-	return true;
+	return (t);
 }
-
-bool expression()
+treenode* fact()
 {
-	bool string = false;
-	do
-	{
-		string = term();
-		y = get_next();
-	} while (y.Value == H_ADD || y.Value == H_SUBT);
-	put_back();
-	return string;
-}
-
-bool term()
-{
-	bool string = false;
-	do {
-		string = fact();
-		y = get_next();
-	} while (y.Value == H_MULT || y.Value == H_F_SLASH);
-	put_back();
-	return string;
-}
-
-bool fact()
-{
-
+	treenode* t = nullptr;
 	y = get_next();
 	if (y.Value == H_NUM)
-		return true;
+	{
+		t = new treenode();
+		t->expk = constk;
+		//t->value=stoi(y.Token_str);
+		t->name = y.Token_str;
+		//t->opr=NUL;
+		t->leftchild = nullptr;
+		t->rightchild = nullptr;
+		return(t);
+	}
 	else if (y.Value == H_VAR)
-		return true;
+	{
+		t = new treenode();
+		t->expk = idk;
+		//t->value=atoi(tok.name);
+		t->name = y.Token_str;
+		//t->opr=NUL;
+		t->leftchild = nullptr;
+		t->rightchild = nullptr;
+		return(t);
+	}
 	else if (y.Value == H_LB_R)
 	{
-		expression();
+		t = OREXP();
 		y = get_next();
-		if (x.Value == H_RB_R)
-			return true;
+		cout << y.Token_str << endl;
+		if (y.Value == H_RB_R)
+		{
+			return t;
+		}
 		else
-			return false;
+		{
+			return nullptr;
+		}
 	}
-	return false;
+	else
+	{
+		return nullptr;
+	}
+}
+treenode* term()
+{
+	treenode* t = nullptr, * p = nullptr;
+	int flage = 0;
+	do
+	{
+		t = fact();
+		if (flage)
+		{
+			p->rightchild = t;
+			flage = 0;
+			t = p;
+		}
+		y = get_next();
+		if (y.Value == H_MULT || y.Value == H_F_SLASH)
+		{
+			p = new treenode;
+			p->expk = opk;
+			p->token1 = y.Value;
+			p->name = y.Token_str;
+			p->leftchild = t;
+			flage = 1;
+		}
+	} while (y.Value == H_MULT || y.Value == H_F_SLASH);
+	put_back();
+	return (t);
+}
+treenode* expression()
+{
+	treenode* t = nullptr, * p = nullptr;
+	int flage = 0;
+	do
+	{
+		t = term();
+		if (flage)
+		{
+			p->rightchild = t;
+			flage = 0;
+			t = p;
+		}
+		y = get_next();
+		if (y.Value == H_ADD || y.Value == H_SUBT)
+		{
+			p = new treenode;
+			p->expk = opk;
+			p->token1 = y.Value;
+			p->name = y.Token_str;
+			p->leftchild = t;
+			flage = 1;
+		}
+	} while (y.Value == H_ADD || y.Value == H_SUBT);
+	put_back();
+	return (t);
+}
+void traverse(treenode* p)
+{
+	if (p != nullptr)
+	{
+		traverse(p->rightchild);
+		cout << p->name << " ";
+		traverse(p->leftchild);
+	}
 }

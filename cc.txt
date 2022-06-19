@@ -1,7 +1,3 @@
 BEGIN
-	do
-	{
-		a=a+c;
-	}while(a<z);
-	
+	x=2*4+
 END
